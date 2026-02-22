@@ -2,9 +2,56 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>GPS WebAR App</title>
+    <title>Campus AR Navigation</title>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
+    <script>
+      window.onload = () => {
+        // 目的地の座標（先ほど指定してくれた座標）
+        const targetLat = 35.84552959738042;
+        const targetLon = 139.35958232349802;
+        // 配置したい道しるべ（ピン）の数
+        const numberOfPins = 5; 
+
+        // スマホの現在地を取得
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const currentLat = position.coords.latitude;
+            const currentLon = position.coords.longitude;
+            const scene = document.querySelector('a-scene');
+
+            // 現在地から目的地まで等間隔にピンを配置するループ処理
+            for (let i = 1; i <= numberOfPins; i++) {
+              // 全体の距離に対する割合を計算
+              const ratio = i / (numberOfPins + 1);
+              
+              // 途中の座標を計算（直線補間）
+              const pinLat = currentLat + (targetLat - currentLat) * ratio;
+              const pinLon = currentLon + (targetLon - currentLon) * ratio;
+
+              // 目印となるピン（今回は赤い円錐）を作成
+              const pin = document.createElement('a-cone');
+              pin.setAttribute('color', 'red'); // 色
+              pin.setAttribute('radius-bottom', '0.5'); // 底面の太さ
+              pin.setAttribute('height', '1.5'); // 高さ
+              
+              // 計算した座標をセット
+              pin.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
+              // 見えやすいように少し空中に浮かせる
+              pin.setAttribute('position', '0 2 0'); 
+
+              // AR空間（シーン）にピンを追加
+              scene.appendChild(pin);
+            }
+          },
+          (error) => {
+            console.error("現在地が取得できませんでした", error);
+            alert("位置情報の取得に失敗しました。スマホの設定を確認してください。");
+          }
+        );
+      };
+    </script>
   </head>
   <body style="margin: 0; overflow: hidden;">
     <a-scene
@@ -14,7 +61,7 @@
     >
       
       <a-entity
-        gltf-model="url(./双子3.glb)"
+        gltf-model="url(./futago3.glb)"
         gps-entity-place="latitude: 35.84552959738042; longitude: 139.35958232349802;"
         scale="1 1 1"
         position="0 1 0"
@@ -24,6 +71,7 @@
 
     </a-scene>
   </body>
-
 </html>
+
+
 
