@@ -25,7 +25,7 @@
     </style>
 
     <script>
-      // 距離を計算する関数 (メートル)
+      // 距離計算 (メートル)
       function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const radLat1 = lat1 * Math.PI / 180;
@@ -39,7 +39,7 @@
         return R * c;
       }
 
-      // 方位角(向いている角度)を計算する関数
+      // 方位角計算
       function getBearing(lat1, lon1, lat2, lon2) {
         const radLat1 = lat1 * Math.PI / 180;
         const radLat2 = lat2 * Math.PI / 180;
@@ -52,69 +52,97 @@
       }
 
       window.onload = () => {
-        // 目的地
         const targetLat = 35.84552959738042;
         const targetLon = 139.35958232349802;
         
-        const intervalMeters = 1; // 1m間隔でピンを置く
-        const showRadius = 10;    // ★現在地から半径10m以内だけ表示する
+        // ★スマホのフリーズを防ぐため、3m間隔、表示範囲20mに緩和しました
+        const intervalMeters = 3; 
+        const showRadius = 20;    
 
         const statusDiv = document.getElementById('status');
         const scene = document.querySelector('a-scene');
         
         let isInitialized = false; 
-        let arObjects = []; // 生成したすべてのピンとゴールを保存しておく箱
+        let arObjects = [];
 
-        // ★ watchPosition で、歩くたびに現在地を監視し続ける
-        navigator.geolocation.watchPosition(
-          (position) => {
-            const currentLat = position.coords.latitude;
-            const currentLon = position.coords.longitude;
+        // ARカメラの準備ができるのを待つ
+        const camera = document.querySelector('[gps-camera]');
+        
+        // ★AR.jsが内蔵している安全なGPS取得機能を使う
+        camera.addEventListener('gps-camera-update-position', e => {
+          const currentLat = e.detail.position.latitude;
+          const currentLon = e.detail.position.longitude;
+          
+          // 初回のみルートを計算して矢印を配置
+          if (!isInitialized) {
+            statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
             
-            // 初回の1回だけ、目的地までのルートを計算して見えない状態で配置する
-            if (!isInitialized) {
-              statusDiv.innerHTML = "ルート作成完了！<br>歩き始めると近くの案内が表示されます";
-              setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
-              
-              const distance = getDistance(currentLat, currentLon, targetLat, targetLon);
-              const numberOfPins = Math.floor(distance / intervalMeters);
-              
-              // 目的地への方位角を計算（矢印を向かせるため）
-              const bearing = getBearing(currentLat, currentLon, targetLat, targetLon);
-              const arrowRotationY = -bearing; // AR.jsの仕様に合わせて回転の向きを調整
+            const distance = getDistance(currentLat, currentLon, targetLat, targetLon);
+            const numberOfPins = Math.floor(distance / intervalMeters);
+            const bearing = getBearing(currentLat, currentLon, targetLat, targetLon);
+            const arrowRotationY = -bearing;
 
-              // 1. 道しるべの「矢印」を生成
-              for (let i = 1; i <= numberOfPins; i++) {
-                const ratio = (i * intervalMeters) / distance;
-                const pinLat = currentLat + (targetLat - currentLat) * ratio;
-                const pinLon = currentLon + (targetLon - currentLon) * ratio;
+            for (let i = 1; i <= numberOfPins; i++) {
+              const ratio = (i * intervalMeters) / distance;
+              const pinLat = currentLat + (targetLat - currentLat) * ratio;
+              const pinLon = currentLon + (targetLon - currentLon) * ratio;
 
-                // 矢印の土台（座標と、目的地への角度を持つ）
-                const pinWrapper = document.createElement('a-entity');
-                pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
-                pinWrapper.setAttribute('position', '0 1 0'); // 空中4mの高さ
-                pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
-                pinWrapper.setAttribute('visible', 'false'); // ★最初は隠しておく
+              const pinWrapper = document.createElement('a-entity');
+              pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
+              pinWrapper.setAttribute('position', '0 4 0');
+              pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
+              pinWrapper.setAttribute('visible', 'false');
 
-                // 実際の矢印の形（円錐をX軸で-90度倒して、先端を前に向ける）
-                const arrowShape = document.createElement('a-cone');
-                arrowShape.setAttribute('color', 'red');
-                arrowShape.setAttribute('radius-bottom', '1.5');
-                arrowShape.setAttribute('height', '4.5');
-                arrowShape.setAttribute('rotation', '-90 0 0'); 
+              const arrowShape = document.createElement('a-cone');
+              arrowShape.setAttribute('color', 'red');
+              arrowShape.setAttribute('radius-bottom', '1.5');
+              arrowShape.setAttribute('height', '4.5');
+              arrowShape.setAttribute('rotation', '-90 0 0'); 
 
-                pinWrapper.appendChild(arrowShape);
-                scene.appendChild(pinWrapper);
-                
-                // 後で距離を計算するために、配列に保存しておく
-                arObjects.push({ element: pinWrapper, lat: pinLat, lon: pinLon });
+              pinWrapper.appendChild(arrowShape);
+              scene.appendChild(pinWrapper);
+              arObjects.push({ element: pinWrapper, lat: pinLat, lon: pinLon });
+            }
+
+            // ゴールモデル
+            const goalModel = document.createElement('a-entity');
+            goalModel.setAttribute('gltf-model', 'url(./futago3.glb)');
+            goalModel.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLon};`);
+            goalModel.setAttribute('scale', '1 1 1');
+            goalModel.setAttribute('position', '0 1 0');
+            goalModel.setAttribute('visible', 'false');
+            
+            scene.appendChild(goalModel);
+            arObjects.push({ element: goalModel, lat: targetLat, lon: targetLon });
+
+            isInitialized = true;
+          }
+
+          // 距離に応じた表示・非表示の切り替え
+          if (isInitialized) {
+            arObjects.forEach((obj) => {
+              const dist = getDistance(currentLat, currentLon, obj.lat, obj.lon);
+              if (dist <= showRadius) {
+                obj.element.setAttribute('visible', 'true');
+              } else {
+                obj.element.setAttribute('visible', 'false');
               }
+            });
+          }
+        });
+      };
+    </script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <div id="status">カメラと位置情報を<br>準備しています...</div>
 
-              // 2. 最終目的地の3Dモデル（ゴール）を生成
-              const goalModel = document.createElement('a-entity');
-              goalModel.setAttribute('gltf-model', 'url(./futago3.glb)');
-              goalModel.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLon};`);
-              goalModel.setAttribute('scale', '1 1 1');
-              goalModel.setAttribute('position', '0 1 0');
-              goalModel.setAttribute('visible', 'false');
-
+    <a-scene
+      vr-mode-ui="enabled: false"
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false;"
+    >
+      <a-camera gps-camera rotation-reader></a-camera>
+    </a-scene>
+  </body>
+</html>
