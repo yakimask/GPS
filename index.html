@@ -92,7 +92,7 @@
                 // 矢印の土台（座標と、目的地への角度を持つ）
                 const pinWrapper = document.createElement('a-entity');
                 pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
-                pinWrapper.setAttribute('position', '0 4 0'); // 空中4mの高さ
+                pinWrapper.setAttribute('position', '0 1 0'); // 空中4mの高さ
                 pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
                 pinWrapper.setAttribute('visible', 'false'); // ★最初は隠しておく
 
@@ -117,3 +117,4 @@
               goalModel.setAttribute('scale', '1 1 1');
               goalModel.setAttribute('position', '0 1 0');
               goalModel.setAttribute('visible', 'false');
+
