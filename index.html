@@ -7,9 +7,8 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-      /* --- スタートメニューのデザイン --- */
       #start-menu {
-        position: fixed; /* absoluteからfixedに変更して画面枠にガッチリ固定 */
+        position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         background-color: #f4f4f9;
         z-index: 2000;
@@ -17,22 +16,21 @@
         flex-direction: column;
         align-items: center;
         padding-top: 50px;
-        padding-bottom: 80px; /* 一番下のボタンが隠れないように余裕を持たせる */
+        padding-bottom: 80px;
         font-family: sans-serif;
-        overflow-y: scroll; /* autoではなくscrollを指定して強制する */
-        -webkit-overflow-scrolling: touch; /* スマホで滑らかにスクロールさせる魔法の1行 */
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
       }
       h1 { color: #333; font-size: 1.5rem; margin-bottom: 20px; }
       
       .dest-card {
         background: white; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         margin-bottom: 20px; overflow: hidden; width: 80%; max-width: 300px; text-align: center;
-        flex-shrink: 0; /* フレックスボックスの中でカードが潰れないようにする */
+        flex-shrink: 0;
       }
       .dest-card img { width: 100%; height: 150px; object-fit: cover; }
       .dest-card h2 { font-size: 1.2rem; margin: 15px 0; color: #007BFF; }
 
-      /* --- AR画面のUIデザイン --- */
       #status {
         position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
         background-color: rgba(0, 0, 0, 0.7); color: white;
@@ -73,7 +71,6 @@
         return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
       }
 
-      // ★ カンマ抜けを全て修正しました
       const destinations = {
         "place1": { name: "本館", lat: 35.644945, lon: 139.408299, model: "futago3.glb", infoModel: "info.glb" },
         "place2": { name: "12号館", lat: 35.645631, lon: 139.408021, model: "futago3.glb", infoModel: "info.glb" },
@@ -130,7 +127,8 @@
               statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
               
-              const intervalMeters = 1;
+              // ★250mの距離で1m間隔だとスマホがフリーズするので、5m間隔に広げました
+              const intervalMeters = 5;
               let numberOfPins = Math.floor(currentDistance / intervalMeters);
               const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
               const arrowRotationY = -bearing;
@@ -142,14 +140,16 @@
 
                 const pinWrapper = document.createElement('a-entity');
                 pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
-                pinWrapper.setAttribute('position', '0 2 0'); 
+                // ★空中に浮いていたのを、地面スレスレ（0.2m）に下ろしました！これで上向きの錯覚が直ります
+                pinWrapper.setAttribute('position', '0 0.2 0'); 
                 pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
                 const arrowShape = document.createElement('a-cone');
                 arrowShape.setAttribute('color', 'red');
+                // ★めちゃくちゃ巨大なサイズに変更しました（太さ1.5m、長さ4.5m）
                 arrowShape.setAttribute('radius-bottom', '1.5');
-                arrowShape.setAttribute('height', '2.5');
-                arrowShape.setAttribute('rotation', '-90 0 0');
+                arrowShape.setAttribute('height', '4.5');
+                arrowShape.setAttribute('rotation', '-90 0 0'); // 前を向かせる設定
                 
                 pinWrapper.appendChild(arrowShape);
                 scene.appendChild(pinWrapper);
@@ -266,12 +266,3 @@
     </a-scene>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
