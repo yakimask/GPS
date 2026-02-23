@@ -7,6 +7,7 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
+      /* 最初の案内メッセージ用 */
       #status {
         position: absolute;
         top: 20px;
@@ -22,6 +23,27 @@
         text-align: center;
         width: 80%;
       }
+      /* ★追加：画面下に常に表示する「残り距離」のデザイン */
+      #distance-display {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        padding: 15px 30px;
+        border-radius: 30px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        font-family: sans-serif;
+        z-index: 1000;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        display: none; /* 最初は隠しておく */
+        white-space: nowrap;
+      }
+      /* メートルの単位を少し小さくする装飾 */
+      .unit { font-size: 1rem; color: #666; }
     </style>
 
     <script>
@@ -50,68 +72,73 @@
       }
 
       window.onload = () => {
-        const targetLat = 35.859449;
-        const targetLon = 139.314421 ;
-        
-        // ★ 3m間隔に変更しました
+        const targetLat = 35.84552959738042;
+        const targetLon = 139.35958232349802;
         const intervalMeters = 3; 
 
         const statusDiv = document.getElementById('status');
+        const distanceDisplay = document.getElementById('distance-display'); // 追加
         const scene = document.querySelector('a-scene');
         
-        navigator.geolocation.getCurrentPosition(
+        let isInitialized = false; // 矢印を置いたかどうかの判定用フラグ
+
+        // ★ watchPosition に戻して、歩くたびに距離を計算し直すようにする
+        navigator.geolocation.watchPosition(
           (position) => {
-            statusDiv.innerHTML = "GPSを受信！ルートを計算中...";
-            
             const currentLat = position.coords.latitude;
             const currentLon = position.coords.longitude;
             
-            const distance = getDistance(currentLat, currentLon, targetLat, targetLon);
-            let numberOfPins = Math.floor(distance / intervalMeters);
-            
-            // ★ 上限リミッターの処理を削除しました
+            // 現在地からゴールまでの正確な距離を計算
+            const currentDistanceToGoal = Math.floor(getDistance(currentLat, currentLon, targetLat, targetLon));
 
-            // 目的地への方角を計算して、矢印を向かせる角度を決める
-            const bearing = getBearing(currentLat, currentLon, targetLat, targetLon);
-            const arrowRotationY = -bearing;
+            // ★ 距離表示のUIを更新して、画面に表示する
+            distanceDisplay.innerHTML = `目的地まで あと ${currentDistanceToGoal} <span class="unit">m</span>`;
+            distanceDisplay.style.display = 'block';
 
-            for (let i = 1; i <= numberOfPins; i++) {
-              const ratio = (i * intervalMeters) / distance;
-              const pinLat = currentLat + (targetLat - currentLat) * ratio;
-              const pinLon = currentLon + (targetLon - currentLon) * ratio;
+            // 以下の「矢印を並べる処理」は、最初の1回（isInitialized が false の時）しか実行されない！
+            if (!isInitialized) {
+              statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
+              setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
+              
+              let numberOfPins = Math.floor(currentDistanceToGoal / intervalMeters);
+              const bearing = getBearing(currentLat, currentLon, targetLat, targetLon);
+              const arrowRotationY = -bearing;
 
-              // 矢印の土台
-              const pinWrapper = document.createElement('a-entity');
-              pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
-              pinWrapper.setAttribute('position', '0 2 0'); 
-              pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
+              for (let i = 1; i <= numberOfPins; i++) {
+                const ratio = (i * intervalMeters) / currentDistanceToGoal;
+                const pinLat = currentLat + (targetLat - currentLat) * ratio;
+                const pinLon = currentLon + (targetLon - currentLon) * ratio;
 
-              // 矢印の形
-              const arrowShape = document.createElement('a-cone');
-              arrowShape.setAttribute('color', 'red');
-              arrowShape.setAttribute('radius-bottom', '0.5');
-              arrowShape.setAttribute('height', '1.5');
-              arrowShape.setAttribute('rotation', '-90 0 0');
+                const pinWrapper = document.createElement('a-entity');
+                pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
+                pinWrapper.setAttribute('position', '0 2 0'); 
+                pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
-              pinWrapper.appendChild(arrowShape);
-              scene.appendChild(pinWrapper);
+                const arrowShape = document.createElement('a-cone');
+                arrowShape.setAttribute('color', 'red');
+                arrowShape.setAttribute('radius-bottom', '0.5');
+                arrowShape.setAttribute('height', '1.5');
+                arrowShape.setAttribute('rotation', '-90 0 0');
+
+                pinWrapper.appendChild(arrowShape);
+                scene.appendChild(pinWrapper);
+              }
+
+              const goalModel = document.createElement('a-entity');
+              goalModel.setAttribute('gltf-model', 'url(./futago3.glb)');
+              goalModel.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLon};`);
+              goalModel.setAttribute('scale', '1 1 1');
+              goalModel.setAttribute('position', '0 1 0');
+              
+              scene.appendChild(goalModel);
+
+              // 矢印を置き終わったので、フラグを true にして二度とこの処理に入らないようにする
+              isInitialized = true;
             }
-
-            // ゴールの3Dモデル
-            const goalModel = document.createElement('a-entity');
-            goalModel.setAttribute('gltf-model', 'url(./futago3.glb)');
-            goalModel.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLon};`);
-            goalModel.setAttribute('scale', '1 1 1');
-            goalModel.setAttribute('position', '0 1 0');
-            
-            scene.appendChild(goalModel);
-
-            // 完了メッセージ
-            statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
-            setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
           },
           (error) => {
             console.error("位置情報エラー", error);
+            statusDiv.style.display = 'block';
             statusDiv.innerHTML = "位置情報の取得に失敗しました<br>スマホのGPS設定を確認してください";
             statusDiv.style.backgroundColor = "rgba(255, 0, 0, 0.7)";
           },
@@ -126,6 +153,8 @@
   </head>
   <body style="margin: 0; overflow: hidden;">
     <div id="status">位置情報を取得中...<br>少しお待ちください</div>
+    
+    <div id="distance-display"></div>
 
     <a-scene
       vr-mode-ui="enabled: false"
@@ -136,4 +165,3 @@
     </a-scene>
   </body>
 </html>
-
