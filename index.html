@@ -81,7 +81,7 @@
         let isInitialized = false;
         let isArrived = false;
         let infoModelElement;
-        let navArrowWrapper; // ★ 矢印を1つだけ保存する変数
+        let navArrowWrapper;
 
         watchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -94,24 +94,40 @@
               if (!isArrived) {
                 distanceDisplay.innerHTML = `<span class="arrived-text">目的地に到着しました！</span>`;
                 if (infoModelElement) infoModelElement.setAttribute('visible', 'true');
-                if (navArrowWrapper) navArrowWrapper.setAttribute('visible', 'false'); // 到着したら矢印を消す
+                if (navArrowWrapper) navArrowWrapper.setAttribute('visible', 'false');
                 isArrived = true;
               }
             } else {
               distanceDisplay.innerHTML = `目的地まで あと ${currentDistance} <span class="unit">m</span>`;
               if (isArrived) {
                 if (infoModelElement) infoModelElement.setAttribute('visible', 'false');
+                if (navArrowWrapper) navArrowWrapper.setAttribute('visible', 'true');
                 isArrived = false;
               }
             }
             distanceDisplay.style.display = 'block';
 
-            // ★ 初期化（1回だけ実行）
+            // ★ ここで「自分から何m先に矢印を出すか」を計算（15m推奨）
+            let arrowDistance = 15; // 50にしたい場合はここを50に変えてください
+            if (currentDistance < arrowDistance) {
+              arrowDistance = currentDistance; 
+            }
+            
+            // 安全装置（エラー回避）
+            let ratio = 0;
+            if (currentDistance > 0) {
+               ratio = arrowDistance / currentDistance;
+            }
+
+            const arrowLat = currentLat + (dest.lat - currentLat) * ratio;
+            const arrowLon = currentLon + (dest.lon - currentLon) * ratio;
+            const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
+            const arrowRotationY = -bearing;
+
             if (!isInitialized) {
               statusDiv.innerHTML = "案内スタート！<br>矢印の方向へ進んでください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
               
-              // 1. 目的地のモデルと波紋の配置（ここは変更なし）
               const goalWrapper = document.createElement('a-entity');
               goalWrapper.setAttribute('gps-entity-place', `latitude: ${dest.lat}; longitude: ${dest.lon};`);
               
@@ -140,43 +156,26 @@
 
               scene.appendChild(goalWrapper);
 
-              // 2. ★ 大幅変更：案内矢印を「1つ」だけ作る！
+              // ★ バグ修正箇所：最初からGPS座標を矢印に埋め込む！
               navArrowWrapper = document.createElement('a-entity');
-              // 高さは目の前くらい（Y=1.5）にして見やすくする
-              navArrowWrapper.setAttribute('position', '30 3 30'); 
+              navArrowWrapper.setAttribute('gps-entity-place', `latitude: ${arrowLat}; longitude: ${arrowLon};`);
+              navArrowWrapper.setAttribute('position', '0 3 0'); // 高さは3m
+              navArrowWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
               const arrowShape = document.createElement('a-cone');
-              arrowShape.setAttribute('color', '#FFEB3B'); // 目立つ黄色
-              arrowShape.setAttribute('radius-bottom', '1'); // 太さ
-              arrowShape.setAttribute('height', '30');        // 長さ
-              arrowShape.setAttribute('rotation', '-110 0 0'); // 少しおじぎさせる
+              arrowShape.setAttribute('color', '#FFEB3B'); // 黄色
+              arrowShape.setAttribute('radius-bottom', '2.0'); // 太さ
+              arrowShape.setAttribute('height', '6.0');        // 長さ
+              arrowShape.setAttribute('rotation', '-110 0 0'); // おじぎ角度
               
               navArrowWrapper.appendChild(arrowShape);
               scene.appendChild(navArrowWrapper);
 
               isInitialized = true;
-            }
-
-            // ★ 自分が歩くたびに、矢印の位置と向きをアップデートする
-            if (isInitialized && !isArrived && navArrowWrapper) {
-              // 常に自分から「3m先」に矢印を浮かせる計算
-              let arrowDistance = 50;
-              if (currentDistance < 50) arrowDistance = currentDistance; // 3mより近い場合は調整
-              
-              const ratio = arrowDistance / currentDistance;
-              const arrowLat = currentLat + (dest.lat - currentLat) * ratio;
-              const arrowLon = currentLon + (dest.lon - currentLon) * ratio;
-
-              // 矢印の場所を更新
+            } else if (!isArrived && navArrowWrapper) {
+              // 2回目以降のGPS更新（歩いた時）
               navArrowWrapper.setAttribute('gps-entity-place', `latitude: ${arrowLat}; longitude: ${arrowLon};`);
-              
-              // 矢印の向きを目的地に向ける
-              const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
-              const arrowRotationY = -bearing;
               navArrowWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
-              
-              // 表示をオンにする
-              navArrowWrapper.setAttribute('visible', 'true');
             }
           },
           (error) => {
@@ -215,8 +214,3 @@
     </a-scene>
   </body>
 </html>
-
-
-
-
-
