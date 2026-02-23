@@ -143,12 +143,12 @@
               // 2. ★ 大幅変更：案内矢印を「1つ」だけ作る！
               navArrowWrapper = document.createElement('a-entity');
               // 高さは目の前くらい（Y=1.5）にして見やすくする
-              navArrowWrapper.setAttribute('position', '0 1.5 0'); 
+              navArrowWrapper.setAttribute('position', '2 3 0'); 
 
               const arrowShape = document.createElement('a-cone');
               arrowShape.setAttribute('color', '#FFEB3B'); // 目立つ黄色
-              arrowShape.setAttribute('radius-bottom', '0.8'); // 太さ
-              arrowShape.setAttribute('height', '2.0');        // 長さ
+              arrowShape.setAttribute('radius-bottom', '10'); // 太さ
+              arrowShape.setAttribute('height', '10');        // 長さ
               arrowShape.setAttribute('rotation', '-110 0 0'); // 少しおじぎさせる
               
               navArrowWrapper.appendChild(arrowShape);
@@ -215,3 +215,4 @@
     </a-scene>
   </body>
 </html>
+
