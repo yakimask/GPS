@@ -9,48 +9,35 @@
     <style>
       /* --- スタートメニューのデザイン --- */
       #start-menu {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
+        position: fixed; /* absoluteからfixedに変更して画面枠にガッチリ固定 */
+        top: 0; left: 0; right: 0; bottom: 0;
         background-color: #f4f4f9;
-        z-index: 2000; /* AR画面より手前に出す */
+        z-index: 2000;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding-top: 50px;
+        padding-bottom: 80px; /* 一番下のボタンが隠れないように余裕を持たせる */
         font-family: sans-serif;
-        overflow-y: auto;
+        overflow-y: scroll; /* autoではなくscrollを指定して強制する */
+        -webkit-overflow-scrolling: touch; /* スマホで滑らかにスクロールさせる魔法の1行 */
       }
       h1 { color: #333; font-size: 1.5rem; margin-bottom: 20px; }
       
-      /* 写真（カード）のデザイン */
       .dest-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        margin-bottom: 20px;
-        overflow: hidden;
-        width: 80%;
-        max-width: 300px;
-        text-align: center;
+        background: white; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        margin-bottom: 20px; overflow: hidden; width: 80%; max-width: 300px; text-align: center;
+        flex-shrink: 0; /* フレックスボックスの中でカードが潰れないようにする */
       }
-      .dest-card img {
-        width: 100%;
-        height: 150px;
-        object-fit: cover;
-      }
-      .dest-card h2 {
-        font-size: 1.2rem;
-        margin: 15px 0;
-        color: #007BFF;
-      }
+      .dest-card img { width: 100%; height: 150px; object-fit: cover; }
+      .dest-card h2 { font-size: 1.2rem; margin: 15px 0; color: #007BFF; }
 
       /* --- AR画面のUIデザイン --- */
       #status {
         position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
         background-color: rgba(0, 0, 0, 0.7); color: white;
         padding: 15px 20px; border-radius: 10px; font-size: 1rem;
-        font-family: sans-serif; z-index: 1000; text-align: center; width: 80%;
-        display: none; /* 最初は隠す */
+        font-family: sans-serif; z-index: 1000; text-align: center; width: 80%; display: none;
       }
       #distance-display {
         position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -64,7 +51,6 @@
     </style>
 
     <script>
-      // 距離と方角の計算関数
       function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const radLat1 = lat1 * Math.PI / 180;
@@ -87,87 +73,25 @@
         return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
       }
 
-      // ★目的地のデータを管理する場所（複数増やせます）
+      // ★ カンマ抜けを全て修正しました
       const destinations = {
-        "place1": {
-          name: "本館",
-          lat: 35.644945,
-          lon: 139.408299,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place2": {
-          name: "12号館", // テスト用の2つ目の目的地（座標は適当に変更してください）
-          lat: 35.645631,  
-          lon: 139.408021,
-          model: "futago3.glb",
-          infoModel: "info.glb"
-        },
-        "place3": {
-          name: "13号館",
-          lat: 35.645976, 
-          lon: 139.408996,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place4": {
-          name: "資料図書館（15号館）",
-          lat: 35.644214, 
-          lon: 139.406271,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place5": {
-          name: "16号館",
-          lat: 35.645403, 
-          lon: 139.407072,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place6": {
-          name: "大学会館(22号館)",
-          lat: 35.644464, 
-          lon: 139.408831
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place7": {
-          name: "体育館(25号館)",
-          lat: 35.643480, 
-          lon: 139.408686,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place8": {
-          name: "26号館",
-          lat: 35.644096, 
-          lon: 139.407233
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place9": {
-          name: "27号館",
-          lat: 35.644075, 
-          lon: 139.408067,
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
-        "place10": {
-          name: "28号館",
-          lat: 35.645255, 
-          lon: 139.407549
-          model: "futago3.glb",     // 遠くから見えるメインモデル
-          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
-        },
+        "place1": { name: "本館", lat: 35.644945, lon: 139.408299, model: "futago3.glb", infoModel: "info.glb" },
+        "place2": { name: "12号館", lat: 35.645631, lon: 139.408021, model: "futago3.glb", infoModel: "info.glb" },
+        "place3": { name: "13号館", lat: 35.645976, lon: 139.408996, model: "futago3.glb", infoModel: "info.glb" },
+        "place4": { name: "資料図書館（15号館）", lat: 35.644214, lon: 139.406271, model: "futago3.glb", infoModel: "info.glb" },
+        "place5": { name: "16号館", lat: 35.645403, lon: 139.407072, model: "futago3.glb", infoModel: "info.glb" },
+        "place6": { name: "大学会館(22号館)", lat: 35.644464, lon: 139.408831, model: "futago3.glb", infoModel: "info.glb" },
+        "place7": { name: "体育館(25号館)", lat: 35.643480, lon: 139.408686, model: "futago3.glb", infoModel: "info.glb" },
+        "place8": { name: "26号館", lat: 35.644096, lon: 139.407233, model: "futago3.glb", infoModel: "info.glb" },
+        "place9": { name: "27号館", lat: 35.644075, lon: 139.408067, model: "futago3.glb", infoModel: "info.glb" },
+        "place10": { name: "28号館", lat: 35.645255, lon: 139.407549, model: "futago3.glb", infoModel: "info.glb" }
       };
 
       let watchId;
 
-      // メニューの写真がタップされたら呼ばれる関数
       window.startNavigation = (placeKey) => {
         const dest = destinations[placeKey];
         
-        // メニューを消して、AR用のUIを出す
         document.getElementById('start-menu').style.display = 'none';
         const statusDiv = document.getElementById('status');
         const distanceDisplay = document.getElementById('distance-display');
@@ -177,8 +101,8 @@
         statusDiv.innerHTML = "GPSを受信中...<br>少しお待ちください";
 
         let isInitialized = false;
-        let isArrived = false; // 到着したかどうかの判定フラグ
-        let infoModelElement;  // 後で表示させる説明モデルのタグを保存しておく変数
+        let isArrived = false;
+        let infoModelElement;
 
         watchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -186,26 +110,21 @@
             const currentLon = position.coords.longitude;
             const currentDistance = Math.floor(getDistance(currentLat, currentLon, dest.lat, dest.lon));
 
-            // 到着判定（3m以内に入ったか）
             if (currentDistance <= 3) {
               if (!isArrived) {
                 distanceDisplay.innerHTML = `<span class="arrived-text">目的地に到着しました！</span>`;
-                // ★隠していた説明用モデルを表示する！
                 if (infoModelElement) infoModelElement.setAttribute('visible', 'true');
                 isArrived = true;
               }
             } else {
-              // まだ到着していない場合
               distanceDisplay.innerHTML = `目的地まで あと ${currentDistance} <span class="unit">m</span>`;
               if (isArrived) {
-                // もしサークルから出たら説明を隠す
                 if (infoModelElement) infoModelElement.setAttribute('visible', 'false');
                 isArrived = false;
               }
             }
             distanceDisplay.style.display = 'block';
 
-            // 初回の1回だけ矢印と目的地モデルを置く
             if (!isInitialized) {
               statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
@@ -215,7 +134,6 @@
               const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
               const arrowRotationY = -bearing;
 
-              // 1. 矢印を配置
               for (let i = 1; i <= numberOfPins; i++) {
                 const ratio = (i * intervalMeters) / currentDistance;
                 const pinLat = currentLat + (dest.lat - currentLat) * ratio;
@@ -236,41 +154,33 @@
                 scene.appendChild(pinWrapper);
               }
 
-              // 2. 目的地の全体をまとめる透明な箱（ラッパー）を作る
               const goalWrapper = document.createElement('a-entity');
               goalWrapper.setAttribute('gps-entity-place', `latitude: ${dest.lat}; longitude: ${dest.lon};`);
               
-              // 3. メインの3Dモデル（遠くから見えるやつ）
               const mainModel = document.createElement('a-entity');
               mainModel.setAttribute('gltf-model', `url(./${dest.model})`);
               mainModel.setAttribute('scale', '1 1 1');
               mainModel.setAttribute('position', '0 1 0');
               goalWrapper.appendChild(mainModel);
 
-              // 4. ★青い波紋サークルを追加
               const ripple = document.createElement('a-ring');
-              ripple.setAttribute('color', '#00FFFF'); // サイバーな水色
+              ripple.setAttribute('color', '#00FFFF');
               ripple.setAttribute('radius-inner', '1.5');
               ripple.setAttribute('radius-outer', '2.0');
-              ripple.setAttribute('position', '0 0.1 0'); // 地面より少しだけ浮かす
-              ripple.setAttribute('rotation', '-90 0 0'); // 地面と平行に寝かせる
-              // 大きくなるアニメーションと、透明になるアニメーションを同時にかける
+              ripple.setAttribute('position', '0 0.1 0');
+              ripple.setAttribute('rotation', '-90 0 0');
               ripple.setAttribute('animation', 'property: scale; from: 1 1 1; to: 4 4 4; dur: 2000; loop: true; easing: linear');
               ripple.setAttribute('animation__opacity', 'property: opacity; from: 0.8; to: 0; dur: 2000; loop: true; easing: linear');
               goalWrapper.appendChild(ripple);
 
-              // 5. ★説明用の3Dモデル（最初は見えない）
               infoModelElement = document.createElement('a-entity');
               infoModelElement.setAttribute('gltf-model', `url(./${dest.infoModel})`);
-              // メインモデルの上に浮かべる（位置はモデルの形に合わせて適宜調整してください）
               infoModelElement.setAttribute('position', '0 3 0'); 
               infoModelElement.setAttribute('scale', '1 1 1');
-              infoModelElement.setAttribute('visible', 'false'); // ★最初は隠す
+              infoModelElement.setAttribute('visible', 'false');
               goalWrapper.appendChild(infoModelElement);
 
-              // まとめた箱をAR空間に追加
               scene.appendChild(goalWrapper);
-
               isInitialized = true;
             }
           },
@@ -349,6 +259,3 @@
     </a-scene>
   </body>
 </html>
-
-
-
