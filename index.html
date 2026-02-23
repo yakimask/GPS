@@ -160,8 +160,8 @@
             // ★ 自分が歩くたびに、矢印の位置と向きをアップデートする
             if (isInitialized && !isArrived && navArrowWrapper) {
               // 常に自分から「3m先」に矢印を浮かせる計算
-              let arrowDistance = 3;
-              if (currentDistance < 3) arrowDistance = currentDistance; // 3mより近い場合は調整
+              let arrowDistance = 10;
+              if (currentDistance < 10) arrowDistance = currentDistance; // 3mより近い場合は調整
               
               const ratio = arrowDistance / currentDistance;
               const arrowLat = currentLat + (dest.lat - currentLat) * ratio;
@@ -215,6 +215,7 @@
     </a-scene>
   </body>
 </html>
+
 
 
 
