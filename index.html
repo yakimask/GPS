@@ -8,41 +8,32 @@
     
     <style>
       #start-menu {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: #f4f4f9;
-        z-index: 2000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 50px;
-        padding-bottom: 80px;
-        font-family: sans-serif;
-        overflow-y: scroll;
-        -webkit-overflow-scrolling: touch;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #f4f4f9; z-index: 2000; display: flex;
+        flex-direction: column; align-items: center; padding-top: 50px;
+        padding-bottom: 80px; font-family: sans-serif;
+        overflow-y: scroll; -webkit-overflow-scrolling: touch;
       }
       h1 { color: #333; font-size: 1.5rem; margin-bottom: 20px; }
-      
       .dest-card {
         background: white; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        margin-bottom: 20px; overflow: hidden; width: 80%; max-width: 300px; text-align: center;
-        flex-shrink: 0;
+        margin-bottom: 20px; overflow: hidden; width: 80%; max-width: 300px;
+        text-align: center; flex-shrink: 0;
       }
       .dest-card img { width: 100%; height: 150px; object-fit: cover; }
       .dest-card h2 { font-size: 1.2rem; margin: 15px 0; color: #007BFF; }
-
       #status {
         position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-        background-color: rgba(0, 0, 0, 0.7); color: white;
-        padding: 15px 20px; border-radius: 10px; font-size: 1rem;
-        font-family: sans-serif; z-index: 1000; text-align: center; width: 80%; display: none;
+        background-color: rgba(0, 0, 0, 0.7); color: white; padding: 15px 20px;
+        border-radius: 10px; font-size: 1rem; font-family: sans-serif;
+        z-index: 1000; text-align: center; width: 80%; display: none;
       }
       #distance-display {
         position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-        background-color: rgba(255, 255, 255, 0.9); color: #333;
-        padding: 15px 30px; border-radius: 30px; font-size: 1.5rem; font-weight: bold;
-        font-family: sans-serif; z-index: 1000; text-align: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; white-space: nowrap;
+        background-color: rgba(255, 255, 255, 0.9); color: #333; padding: 15px 30px;
+        border-radius: 30px; font-size: 1.5rem; font-weight: bold; font-family: sans-serif;
+        z-index: 1000; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        display: none; white-space: nowrap;
       }
       .unit { font-size: 1rem; color: #666; }
       .arrived-text { color: #e91e63; font-size: 1.2rem; }
@@ -51,23 +42,17 @@
     <script>
       function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000;
-        const radLat1 = lat1 * Math.PI / 180;
-        const radLat2 = lat2 * Math.PI / 180;
-        const deltaLat = (lat2 - lat1) * Math.PI / 180;
-        const deltaLon = (lon2 - lon1) * Math.PI / 180;
+        const radLat1 = lat1 * Math.PI / 180; const radLat2 = lat2 * Math.PI / 180;
+        const deltaLat = (lat2 - lat1) * Math.PI / 180; const deltaLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-                  Math.cos(radLat1) * Math.cos(radLat2) *
-                  Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
+                  Math.cos(radLat1) * Math.cos(radLat2) * Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       }
-
       function getBearing(lat1, lon1, lat2, lon2) {
-        const radLat1 = lat1 * Math.PI / 180;
-        const radLat2 = lat2 * Math.PI / 180;
+        const radLat1 = lat1 * Math.PI / 180; const radLat2 = lat2 * Math.PI / 180;
         const deltaLon = (lon2 - lon1) * Math.PI / 180;
         const y = Math.sin(deltaLon) * Math.cos(radLat2);
-        const x = Math.cos(radLat1) * Math.sin(radLat2) -
-                  Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(deltaLon);
+        const x = Math.cos(radLat1) * Math.sin(radLat2) - Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(deltaLon);
         return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
       }
 
@@ -86,10 +71,8 @@
       };
 
       let watchId;
-
       window.startNavigation = (placeKey) => {
         const dest = destinations[placeKey];
-        
         document.getElementById('start-menu').style.display = 'none';
         const statusDiv = document.getElementById('status');
         const distanceDisplay = document.getElementById('distance-display');
@@ -127,7 +110,7 @@
               statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
               
-              // ★250mの距離で1m間隔だとスマホがフリーズするので、5m間隔に広げました
+              // ★変更：250mなどで1m間隔だと250個生成されて重いので「5m間隔」にしました
               const intervalMeters = 5;
               let numberOfPins = Math.floor(currentDistance / intervalMeters);
               const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
@@ -140,16 +123,19 @@
 
                 const pinWrapper = document.createElement('a-entity');
                 pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
-                // ★空中に浮いていたのを、地面スレスレ（0.2m）に下ろしました！これで上向きの錯覚が直ります
-                pinWrapper.setAttribute('position', '0 0.2 0'); 
+                // 高さを3mにして、頭上に浮かせる
+                pinWrapper.setAttribute('position', '0 3 0'); 
                 pinWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
                 const arrowShape = document.createElement('a-cone');
                 arrowShape.setAttribute('color', 'red');
-                // ★めちゃくちゃ巨大なサイズに変更しました（太さ1.5m、長さ4.5m）
+                // ★変更：矢印を太く、長くして巨大化させました！
                 arrowShape.setAttribute('radius-bottom', '1.5');
-                arrowShape.setAttribute('height', '4.5');
-                arrowShape.setAttribute('rotation', '-90 0 0'); // 前を向かせる設定
+                arrowShape.setAttribute('height', '4.0');
+                
+                // ★ここが超重要！ -90 ではなく -110度にして、矢印を少し下向きに傾ける
+                // これにより、後ろからでも「平らなおしり」ではなく「トンガリ」が見えるようになります
+                arrowShape.setAttribute('rotation', '-110 0 0');
                 
                 pinWrapper.appendChild(arrowShape);
                 scene.appendChild(pinWrapper);
@@ -200,62 +186,50 @@
     
     <div id="start-menu">
       <h1>目的地を選んでください</h1>
-      
       <div class="dest-card" onclick="startNavigation('place1')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="本館">
         <h2>本館へ行く</h2>
       </div>
-
       <div class="dest-card" onclick="startNavigation('place2')">
         <img src="https://via.placeholder.com/300x150?text=Photo+2" alt="12号館">
         <h2>12号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place3')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="13号館">
         <h2>13号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place4')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="資料図書館(15号館）">
         <h2>資料図書館(15号館)へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place5')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="16号館">
         <h2>16号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place6')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="22号館">
         <h2>22号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place7')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="体育館（25号館）">
         <h2>体育館（25号館）へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place8')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="26号館">
         <h2>26号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place9')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="27号館">
         <h2>27号館へ行く</h2>
       </div>
-
        <div class="dest-card" onclick="startNavigation('place10')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="28号館">
         <h2>28号館へ行く</h2>
       </div>
-
       <div class="dest-card" onclick="startNavigation('place11')">
         <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="公園">
         <h2>公園へ行く</h2>
       </div>
-      
     </div>
 
     <div id="status"></div>
