@@ -7,46 +7,63 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-      /* 最初の案内メッセージ用 */
-      #status {
+      /* --- スタートメニューのデザイン --- */
+      #start-menu {
         position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 15px 20px;
-        border-radius: 10px;
-        font-size: 1rem;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: #f4f4f9;
+        z-index: 2000; /* AR画面より手前に出す */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 50px;
         font-family: sans-serif;
-        z-index: 1000;
-        text-align: center;
+      }
+      h1 { color: #333; font-size: 1.5rem; margin-bottom: 20px; }
+      
+      /* 写真（カード）のデザイン */
+      .dest-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+        overflow: hidden;
         width: 80%;
-      }
-      /* ★追加：画面下に常に表示する「残り距離」のデザイン */
-      #distance-display {
-        position: absolute;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #333;
-        padding: 15px 30px;
-        border-radius: 30px;
-        font-size: 1.5rem;
-        font-weight: bold;
-        font-family: sans-serif;
-        z-index: 1000;
+        max-width: 300px;
         text-align: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        display: none; /* 最初は隠しておく */
-        white-space: nowrap;
       }
-      /* メートルの単位を少し小さくする装飾 */
+      .dest-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+      }
+      .dest-card h2 {
+        font-size: 1.2rem;
+        margin: 15px 0;
+        color: #007BFF;
+      }
+
+      /* --- AR画面のUIデザイン --- */
+      #status {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7); color: white;
+        padding: 15px 20px; border-radius: 10px; font-size: 1rem;
+        font-family: sans-serif; z-index: 1000; text-align: center; width: 80%;
+        display: none; /* 最初は隠す */
+      }
+      #distance-display {
+        position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+        background-color: rgba(255, 255, 255, 0.9); color: #333;
+        padding: 15px 30px; border-radius: 30px; font-size: 1.5rem; font-weight: bold;
+        font-family: sans-serif; z-index: 1000; text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: none; white-space: nowrap;
+      }
       .unit { font-size: 1rem; color: #666; }
+      .arrived-text { color: #e91e63; font-size: 1.2rem; }
     </style>
 
     <script>
+      // 距離と方角の計算関数
       function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const radLat1 = lat1 * Math.PI / 180;
@@ -56,8 +73,7 @@
         const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
                   Math.cos(radLat1) * Math.cos(radLat2) *
                   Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       }
 
       function getBearing(lat1, lon1, lat2, lon2) {
@@ -67,47 +83,86 @@
         const y = Math.sin(deltaLon) * Math.cos(radLat2);
         const x = Math.cos(radLat1) * Math.sin(radLat2) -
                   Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(deltaLon);
-        const bearing = Math.atan2(y, x) * 180 / Math.PI;
-        return (bearing + 360) % 360;
+        return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
       }
 
-      window.onload = () => {
-        const targetLat = 35.84552959738042;
-        const targetLon = 139.35958232349802;
-        const intervalMeters = 3; 
+      // ★目的地のデータを管理する場所（複数増やせます）
+      const destinations = {
+        "place1": {
+          name: "双子の像",
+          lat: 35.84552959738042,
+          lon: 139.35958232349802,
+          model: "futago3.glb",     // 遠くから見えるメインモデル
+          infoModel: "info.glb"     // 到着したら出る説明モデル（★用意してください）
+        },
+        "place2": {
+          name: "図書館", // テスト用の2つ目の目的地（座標は適当に変更してください）
+          lat: 35.84600000000000, 
+          lon: 139.36000000000000,
+          model: "futago3.glb",
+          infoModel: "info.glb"
+        }
+      };
 
+      let watchId;
+
+      // メニューの写真がタップされたら呼ばれる関数
+      window.startNavigation = (placeKey) => {
+        const dest = destinations[placeKey];
+        
+        // メニューを消して、AR用のUIを出す
+        document.getElementById('start-menu').style.display = 'none';
         const statusDiv = document.getElementById('status');
-        const distanceDisplay = document.getElementById('distance-display'); // 追加
+        const distanceDisplay = document.getElementById('distance-display');
         const scene = document.querySelector('a-scene');
         
-        let isInitialized = false; // 矢印を置いたかどうかの判定用フラグ
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = "GPSを受信中...<br>少しお待ちください";
 
-        // ★ watchPosition に戻して、歩くたびに距離を計算し直すようにする
-        navigator.geolocation.watchPosition(
+        let isInitialized = false;
+        let isArrived = false; // 到着したかどうかの判定フラグ
+        let infoModelElement;  // 後で表示させる説明モデルのタグを保存しておく変数
+
+        watchId = navigator.geolocation.watchPosition(
           (position) => {
             const currentLat = position.coords.latitude;
             const currentLon = position.coords.longitude;
-            
-            // 現在地からゴールまでの正確な距離を計算
-            const currentDistanceToGoal = Math.floor(getDistance(currentLat, currentLon, targetLat, targetLon));
+            const currentDistance = Math.floor(getDistance(currentLat, currentLon, dest.lat, dest.lon));
 
-            // ★ 距離表示のUIを更新して、画面に表示する
-            distanceDisplay.innerHTML = `目的地まで あと ${currentDistanceToGoal} <span class="unit">m</span>`;
+            // 到着判定（3m以内に入ったか）
+            if (currentDistance <= 3) {
+              if (!isArrived) {
+                distanceDisplay.innerHTML = `<span class="arrived-text">目的地に到着しました！</span>`;
+                // ★隠していた説明用モデルを表示する！
+                if (infoModelElement) infoModelElement.setAttribute('visible', 'true');
+                isArrived = true;
+              }
+            } else {
+              // まだ到着していない場合
+              distanceDisplay.innerHTML = `目的地まで あと ${currentDistance} <span class="unit">m</span>`;
+              if (isArrived) {
+                // もしサークルから出たら説明を隠す
+                if (infoModelElement) infoModelElement.setAttribute('visible', 'false');
+                isArrived = false;
+              }
+            }
             distanceDisplay.style.display = 'block';
 
-            // 以下の「矢印を並べる処理」は、最初の1回（isInitialized が false の時）しか実行されない！
+            // 初回の1回だけ矢印と目的地モデルを置く
             if (!isInitialized) {
               statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
               
-              let numberOfPins = Math.floor(currentDistanceToGoal / intervalMeters);
-              const bearing = getBearing(currentLat, currentLon, targetLat, targetLon);
+              const intervalMeters = 3;
+              let numberOfPins = Math.floor(currentDistance / intervalMeters);
+              const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
               const arrowRotationY = -bearing;
 
+              // 1. 矢印を配置
               for (let i = 1; i <= numberOfPins; i++) {
-                const ratio = (i * intervalMeters) / currentDistanceToGoal;
-                const pinLat = currentLat + (targetLat - currentLat) * ratio;
-                const pinLon = currentLon + (targetLon - currentLon) * ratio;
+                const ratio = (i * intervalMeters) / currentDistance;
+                const pinLat = currentLat + (dest.lat - currentLat) * ratio;
+                const pinLon = currentLon + (dest.lon - currentLon) * ratio;
 
                 const pinWrapper = document.createElement('a-entity');
                 pinWrapper.setAttribute('gps-entity-place', `latitude: ${pinLat}; longitude: ${pinLon};`);
@@ -119,48 +174,80 @@
                 arrowShape.setAttribute('radius-bottom', '0.5');
                 arrowShape.setAttribute('height', '1.5');
                 arrowShape.setAttribute('rotation', '-90 0 0');
-
+                
                 pinWrapper.appendChild(arrowShape);
                 scene.appendChild(pinWrapper);
               }
 
-              const goalModel = document.createElement('a-entity');
-              goalModel.setAttribute('gltf-model', 'url(./futago3.glb)');
-              goalModel.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLon};`);
-              goalModel.setAttribute('scale', '1 1 1');
-              goalModel.setAttribute('position', '0 1 0');
+              // 2. 目的地の全体をまとめる透明な箱（ラッパー）を作る
+              const goalWrapper = document.createElement('a-entity');
+              goalWrapper.setAttribute('gps-entity-place', `latitude: ${dest.lat}; longitude: ${dest.lon};`);
               
-              scene.appendChild(goalModel);
+              // 3. メインの3Dモデル（遠くから見えるやつ）
+              const mainModel = document.createElement('a-entity');
+              mainModel.setAttribute('gltf-model', `url(./${dest.model})`);
+              mainModel.setAttribute('scale', '1 1 1');
+              mainModel.setAttribute('position', '0 1 0');
+              goalWrapper.appendChild(mainModel);
 
-              // 矢印を置き終わったので、フラグを true にして二度とこの処理に入らないようにする
+              // 4. ★青い波紋サークルを追加
+              const ripple = document.createElement('a-ring');
+              ripple.setAttribute('color', '#00FFFF'); // サイバーな水色
+              ripple.setAttribute('radius-inner', '1.5');
+              ripple.setAttribute('radius-outer', '2.0');
+              ripple.setAttribute('position', '0 0.1 0'); // 地面より少しだけ浮かす
+              ripple.setAttribute('rotation', '-90 0 0'); // 地面と平行に寝かせる
+              // 大きくなるアニメーションと、透明になるアニメーションを同時にかける
+              ripple.setAttribute('animation', 'property: scale; from: 1 1 1; to: 4 4 4; dur: 2000; loop: true; easing: linear');
+              ripple.setAttribute('animation__opacity', 'property: opacity; from: 0.8; to: 0; dur: 2000; loop: true; easing: linear');
+              goalWrapper.appendChild(ripple);
+
+              // 5. ★説明用の3Dモデル（最初は見えない）
+              infoModelElement = document.createElement('a-entity');
+              infoModelElement.setAttribute('gltf-model', `url(./${dest.infoModel})`);
+              // メインモデルの上に浮かべる（位置はモデルの形に合わせて適宜調整してください）
+              infoModelElement.setAttribute('position', '0 3 0'); 
+              infoModelElement.setAttribute('scale', '1 1 1');
+              infoModelElement.setAttribute('visible', 'false'); // ★最初は隠す
+              goalWrapper.appendChild(infoModelElement);
+
+              // まとめた箱をAR空間に追加
+              scene.appendChild(goalWrapper);
+
               isInitialized = true;
             }
           },
           (error) => {
             console.error("位置情報エラー", error);
             statusDiv.style.display = 'block';
-            statusDiv.innerHTML = "位置情報の取得に失敗しました<br>スマホのGPS設定を確認してください";
+            statusDiv.innerHTML = "位置情報の取得に失敗しました";
             statusDiv.style.backgroundColor = "rgba(255, 0, 0, 0.7)";
           },
-          {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 10000
-          }
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
       };
     </script>
   </head>
   <body style="margin: 0; overflow: hidden;">
-    <div id="status">位置情報を取得中...<br>少しお待ちください</div>
     
+    <div id="start-menu">
+      <h1>目的地を選んでください</h1>
+      
+      <div class="dest-card" onclick="startNavigation('place1')">
+        <img src="https://via.placeholder.com/300x150?text=Photo+1" alt="双子の像">
+        <h2>双子の像へ行く</h2>
+      </div>
+
+      <div class="dest-card" onclick="startNavigation('place2')">
+        <img src="https://via.placeholder.com/300x150?text=Photo+2" alt="図書館">
+        <h2>図書館へ行く</h2>
+      </div>
+    </div>
+
+    <div id="status"></div>
     <div id="distance-display"></div>
 
-    <a-scene
-      vr-mode-ui="enabled: false"
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: false;"
-    >
+    <a-scene vr-mode-ui="enabled: false" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
       <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
   </body>
