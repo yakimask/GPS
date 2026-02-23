@@ -130,7 +130,7 @@
               statusDiv.innerHTML = "ルート作成完了！<br>目的地に向かって歩いてください";
               setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
               
-              const intervalMeters = 3;
+              const intervalMeters = 1;
               let numberOfPins = Math.floor(currentDistance / intervalMeters);
               const bearing = getBearing(currentLat, currentLon, dest.lat, dest.lon);
               const arrowRotationY = -bearing;
@@ -266,6 +266,7 @@
     </a-scene>
   </body>
 </html>
+
 
 
 
