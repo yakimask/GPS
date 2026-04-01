@@ -37,6 +37,30 @@
     </style>
 
     <script>
+      let arrowTargetY = -1.0; // 矢印の初期の高さ (-1m)
+      let modelTargetY = 1.0;  // 到着モデルの初期の高さ (3mから1mに下げました)
+
+      window.changeHeight = (type, delta) => {
+        if (type === 'arrow') {
+          arrowTargetY += delta;
+          const arrow = document.getElementById('nav-arrow-shape');
+          if (arrow) {
+            const pos = arrow.getAttribute('position');
+            arrow.setAttribute('position', `${pos.x} ${arrowTargetY} ${pos.z}`);
+          }
+        } else if (type === 'model') {
+          modelTargetY += delta;
+          const model = document.getElementById('nav-info-model');
+          if (model) {
+            // アニメーション設定を更新
+            model.setAttribute('animation__pos', `property: position; from: 0 0 0; to: 0 ${modelTargetY} 0; dur: 1500; easing: easeOutElastic; startEvents: popup`);
+            // 既に表示中（到着済み）ならその場で高さを変える
+            if (model.getAttribute('visible') === 'true' || model.getAttribute('visible') === true) {
+              model.setAttribute('position', `0 ${modelTargetY} 0`);
+            }
+          }
+        }
+      };
       function getDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const radLat1 = lat1 * Math.PI / 180; const radLat2 = lat2 * Math.PI / 180;
@@ -77,7 +101,7 @@
         
         statusDiv.style.display = 'block';
         statusDiv.innerHTML = "GPSを受信中...<br>少しお待ちください";
-
+        document.getElementById('control-menu').style.display = 'block'; // ★この1行だけ追加
         let isInitialized = false;
         let isArrived = false;
         let infoModelElement;
@@ -212,7 +236,21 @@
 
     <div id="status"></div>
     <div id="distance-display"></div>
-
+    
+　　<div id="control-menu" style="display: none; position: fixed; bottom: 100px; right: 10px; z-index: 2000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: sans-serif; text-align: center;">
+      <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">高さ調節</div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-size: 0.8rem;">矢印:</span>
+        <button onclick="changeHeight('arrow', 0.5)" style="padding: 5px 10px;">上</button>
+        <button onclick="changeHeight('arrow', -0.5)" style="padding: 5px 10px;">下</button>
+      </div>
+      <div>
+        <span style="font-size: 0.8rem;">到着時:</span>
+        <button onclick="changeHeight('model', 0.5)" style="padding: 5px 10px;">上</button>
+        <button onclick="changeHeight('model', -0.5)" style="padding: 5px 10px;">下</button>
+      </div>
+    </div>
+    
     <a-scene vr-mode-ui="enabled: false" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
       <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
