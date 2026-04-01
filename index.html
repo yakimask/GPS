@@ -54,17 +54,17 @@
       }
 
       const destinations = {
-        "place1": { name: "本館",lat:35.844931, lon:139.360084, model: "futago3.glb", infoModel: "info.glb" },
-        "place2": { name: "12号館", lat:35.645610, lon:139.408008, model: "futago3.glb", infoModel: "info.glb" },
-        "place3": { name: "13号館", lat:35.645952, lon:139.409186, model: "futago3.glb", infoModel: "info.glb" },
-        "place4": { name: "資料図書館（15号館）", lat:35.644231, lon:139.406317, model: "futago3.glb", infoModel: "info.glb" },
-        "place5": { name: "1号館", lat: 35.645307, lon:139.408360, model: "futago3.glb", infoModel: "info.glb" },
-        "place6": { name: "大学会館(22号館)", lat: 35.644464, lon: 139.408831, model: "futago3.glb", infoModel: "info.glb" },
-        "place7": { name: "体育館(25号館)", lat: 35.643480, lon: 139.408686, model: "futago3.glb", infoModel: "info.glb" },
-        "place8": { name: "26号館", lat:35.644096,lon: 139.407233, model: "futago3.glb", infoModel: "info.glb" },
-        "place9": { name: "27号館", lat:35.644075,lon: 139.408067, model: "futago3.glb", infoModel: "info.glb" },
-        "place10": { name: "28号館", lat:35.645255,lon: 139.407549, model: "futago3.glb", infoModel: "info.glb" },
-        "place11": { name: "部活棟", lat:35.645476,lon:139.407983, model: "futago3.glb", infoModel: "info.glb" }
+        "place1": { name: "本館",lat:35.844931, lon:139.360084, infoModel: "info.glb" },
+        "place2": { name: "12号館", lat:35.645610, lon:139.408008, infoModel: "info.glb" },
+        "place3": { name: "13号館", lat:35.645952, lon:139.409186, infoModel: "info.glb" },
+        "place4": { name: "資料図書館（15号館）", lat:35.644231, lon:139.406317, infoModel: "info.glb" },
+        "place5": { name: "1号館", lat: 35.645307, lon:139.408360, infoModel: "info.glb" },
+        "place6": { name: "大学会館(22号館)", lat: 35.644464, lon: 139.408831, infoModel: "info.glb" },
+        "place7": { name: "体育館(25号館)", lat: 35.643480, lon: 139.408686, infoModel: "info.glb" },
+        "place8": { name: "26号館", lat:35.644096,lon: 139.407233, infoModel: "info.glb" },
+        "place9": { name: "27号館", lat:35.644075,lon: 139.408067, infoModel: "info.glb" },
+        "place10": { name: "28号館", lat:35.645255,lon: 139.407549, infoModel: "info.glb" },
+        "place11": { name: "部活棟", lat:35.645476,lon:139.407983, infoModel: "info.glb" }
       };
 
       let watchId;
@@ -93,7 +93,11 @@
             if (currentDistance <= 3) {
               if (!isArrived) {
                 distanceDisplay.innerHTML = `<span class="arrived-text">目的地に到着しました！</span>`;
-                if (infoModelElement) infoModelElement.setAttribute('visible', 'true');
+                if (infoModelElement) {
+                  infoModelElement.setAttribute('visible', 'true');
+                  // ★変更点1: 到着した瞬間に「popup」イベントを発火させる
+                  infoModelElement.emit('popup'); 
+                }
                 if (navArrowWrapper) navArrowWrapper.setAttribute('visible', 'false');
                 isArrived = true;
               }
@@ -131,12 +135,6 @@
               const goalWrapper = document.createElement('a-entity');
               goalWrapper.setAttribute('gps-entity-place', `latitude: ${dest.lat}; longitude: ${dest.lon};`);
               
-              const mainModel = document.createElement('a-entity');
-              mainModel.setAttribute('gltf-model', `url(./${dest.model})`);
-              mainModel.setAttribute('scale', '1 1 1');
-              mainModel.setAttribute('position', '0 1 0');
-              goalWrapper.appendChild(mainModel);
-
               const ripple = document.createElement('a-ring');
               ripple.setAttribute('color', '#00FFFF');
               ripple.setAttribute('radius-inner', '1.5');
@@ -149,9 +147,15 @@
 
               infoModelElement = document.createElement('a-entity');
               infoModelElement.setAttribute('gltf-model', `url(./${dest.infoModel})`);
-              infoModelElement.setAttribute('position', '0 3 0'); 
-              infoModelElement.setAttribute('scale', '1 1 1');
+              // ★変更点2: 最初は地面の高さ(0 0 0)で、極小サイズ(0.1)にセットしておく
+              infoModelElement.setAttribute('position', '0 0 0'); 
+              infoModelElement.setAttribute('scale', '0.1 0.1 0.1');
               infoModelElement.setAttribute('visible', 'false');
+              
+              // ★変更点3: popupイベントを受け取ったら、ぶわんっ（easeOutElastic）と拡大＆上昇するアニメーション
+              infoModelElement.setAttribute('animation__scale', 'property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 1500; easing: easeOutElastic; startEvents: popup');
+              infoModelElement.setAttribute('animation__pos', 'property: position; from: 0 0 0; to: 0 3 0; dur: 1500; easing: easeOutElastic; startEvents: popup');
+
               goalWrapper.appendChild(infoModelElement);
 
               scene.appendChild(goalWrapper);
