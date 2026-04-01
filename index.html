@@ -170,6 +170,7 @@
               goalWrapper.appendChild(ripple);
 
               infoModelElement = document.createElement('a-entity');
+              nfoModelElement.setAttribute('id', 'nav-info-model');
               infoModelElement.setAttribute('gltf-model', `url(./${dest.infoModel})`);
               // ★変更点2: 最初は地面の高さ(0 0 0)で、極小サイズ(0.1)にセットしておく
               infoModelElement.setAttribute('position', '0 0 0'); 
@@ -190,8 +191,9 @@
               navArrowWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
               const arrowShape = document.createElement('a-cone');
+              arrowShape.setAttribute('id', 'nav-arrow-shape');
               arrowShape.setAttribute('color', '#FFEB3B'); // 黄色
-              arrowShape.setAttribute('position', '3 -1 0');
+              arrowShape.setAttribute('position', '3 ${arrowTargetY} 0');
               arrowShape.setAttribute('radius-bottom', '1.0'); // 太さ
               arrowShape.setAttribute('height', '1.0');        // 長さ
               arrowShape.setAttribute('rotation', '-110 0 0'); // おじぎ角度
