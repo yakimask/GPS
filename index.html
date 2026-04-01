@@ -170,22 +170,22 @@
               goalWrapper.appendChild(ripple);
 
               infoModelElement = document.createElement('a-entity');
-              nfoModelElement.setAttribute('id', 'nav-info-model');
+              infoModelElement.setAttribute('id', 'nav-info-model');
               infoModelElement.setAttribute('gltf-model', `url(./${dest.infoModel})`);
-              // ★変更点2: 最初は地面の高さ(0 0 0)で、極小サイズ(0.1)にセットしておく
+              // 最初は地面の高さ(0 0 0)で、極小サイズ(0.1)にセットしておく
               infoModelElement.setAttribute('position', '0 0 0'); 
               infoModelElement.setAttribute('scale', '0.1 0.1 0.1');
               infoModelElement.setAttribute('visible', 'false');
               
-              // ★変更点3: popupイベントを受け取ったら、ぶわんっ（easeOutElastic）と拡大＆上昇するアニメーション
+              // popupイベントを受け取ったら拡大＆上昇するアニメーション
               infoModelElement.setAttribute('animation__scale', 'property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 1500; easing: easeOutElastic; startEvents: popup');
-              infoModelElement.setAttribute('animation__pos', 'property: position; from: 0 0 0; to: 0 3 0; dur: 1500; easing: easeOutElastic; startEvents: popup');
+              // ★ここ修正: 3 を ${modelTargetY} にし、全体をバッククォート(`)で囲みました
+              infoModelElement.setAttribute('animation__pos', `property: position; from: 0 0 0; to: 0 ${modelTargetY} 0; dur: 1500; easing: easeOutElastic; startEvents: popup`);
 
               goalWrapper.appendChild(infoModelElement);
 
               scene.appendChild(goalWrapper);
 
-              // ★ バグ修正箇所：最初からGPS座標を矢印に埋め込む！
               navArrowWrapper = document.createElement('a-entity');
               navArrowWrapper.setAttribute('gps-entity-place', `latitude: ${arrowLat}; longitude: ${arrowLon};`);
               navArrowWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
@@ -193,7 +193,8 @@
               const arrowShape = document.createElement('a-cone');
               arrowShape.setAttribute('id', 'nav-arrow-shape');
               arrowShape.setAttribute('color', '#FFEB3B'); // 黄色
-              arrowShape.setAttribute('position', '3 ${arrowTargetY} 0');
+              // ★ここ修正: シングルクォーテーションをバッククォート(`)に変えました
+              arrowShape.setAttribute('position', `3 ${arrowTargetY} 0`);
               arrowShape.setAttribute('radius-bottom', '1.0'); // 太さ
               arrowShape.setAttribute('height', '1.0');        // 長さ
               arrowShape.setAttribute('rotation', '-110 0 0'); // おじぎ角度
@@ -238,8 +239,7 @@
 
     <div id="status"></div>
     <div id="distance-display"></div>
-    
-　　<div id="control-menu" style="display: none; position: fixed; bottom: 100px; right: 10px; z-index: 2000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: sans-serif; text-align: center;">
+    <div id="control-menu" style="display: none; position: fixed; bottom: 100px; right: 10px; z-index: 2000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: sans-serif; text-align: center;">
       <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">高さ調節</div>
       <div style="margin-bottom: 10px;">
         <span style="font-size: 0.8rem;">矢印:</span>
