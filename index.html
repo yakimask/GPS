@@ -159,11 +159,11 @@
               // ★ バグ修正箇所：最初からGPS座標を矢印に埋め込む！
               navArrowWrapper = document.createElement('a-entity');
               navArrowWrapper.setAttribute('gps-entity-place', `latitude: ${arrowLat}; longitude: ${arrowLon};`);
-              navArrowWrapper.setAttribute('position', '0 3 0'); // 高さは3m
               navArrowWrapper.setAttribute('rotation', `0 ${arrowRotationY} 0`);
 
               const arrowShape = document.createElement('a-cone');
               arrowShape.setAttribute('color', '#FFEB3B'); // 黄色
+              arrowShape.setAttribute('position', '0 3 0');
               arrowShape.setAttribute('radius-bottom', '2.0'); // 太さ
               arrowShape.setAttribute('height', '6.0');        // 長さ
               arrowShape.setAttribute('rotation', '-110 0 0'); // おじぎ角度
